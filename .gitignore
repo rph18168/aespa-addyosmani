@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.env.local
+.env.*.local
+!.env.example
+.ipynb_checkpoints/
+.coverage
+htmlcov/

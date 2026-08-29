@@ -1,0 +1,6 @@
+[project]
+name = "aespa-daily-news-digest"
+version = "0.1.0"
+description = "Collect and email a daily aespa news digest."
+requires-python = ">=3.11"
+dependencies = []
