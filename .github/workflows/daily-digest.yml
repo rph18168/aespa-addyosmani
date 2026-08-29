@@ -1,3 +1,5 @@
+# Refresh workflow registration
+
 name: aespa daily news digest
 
 on:
