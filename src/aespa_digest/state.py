@@ -15,6 +15,7 @@ from .models import Article
 from .qualification import _canonical_url
 
 STATE_VERSION = 1
+MAX_SENT_ITEMS = 10_000
 _FINGERPRINT_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -105,6 +106,13 @@ def mark_sent(
     timestamp = _normalize_datetime(sent_at or datetime.now(timezone.utc))
     for article in articles:
         state.sent[article_fingerprint(article)] = timestamp.isoformat()
+    if len(state.sent) > MAX_SENT_ITEMS:
+        ordered = sorted(
+            state.sent.items(),
+            key=lambda item: _normalize_iso_timestamp(item[1]),
+        )
+        for fingerprint, _ in ordered[:-MAX_SENT_ITEMS]:
+            del state.sent[fingerprint]
     return state
 
 
@@ -125,6 +133,8 @@ def _state_from_payload(payload: object) -> DeliveryState:
         if not isinstance(sent_at, str):
             raise StateError("state file sent_at must be a string")
         sent[fingerprint] = _normalize_iso_timestamp(sent_at).isoformat()
+    if len(sent) > MAX_SENT_ITEMS:
+        raise StateError("state file exceeds the entry limit")
     return DeliveryState(sent=sent)
 
 
