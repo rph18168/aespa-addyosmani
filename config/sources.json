@@ -1,0 +1,40 @@
+{
+  "keywords": [
+    "aespa",
+    "에스파"
+  ],
+  "trusted_domains": [
+    "soompi.com",
+    "billboard.com",
+    "koreaherald.com",
+    "yna.co.kr",
+    "cn.yna.co.kr"
+  ],
+  "feeds": [
+    {
+      "name": "Soompi",
+      "url": "https://www.soompi.com/feed",
+      "fallback_domain": "soompi.com"
+    },
+    {
+      "name": "Billboard",
+      "url": "https://www.billboard.com/feed/",
+      "fallback_domain": "billboard.com"
+    },
+    {
+      "name": "The Korea Herald K-pop",
+      "url": "https://www.koreaherald.com/rss/kh_Kpop",
+      "fallback_domain": "koreaherald.com"
+    },
+    {
+      "name": "Yonhap News English",
+      "url": "https://en.yna.co.kr/RSS/news.xml",
+      "fallback_domain": "en.yna.co.kr"
+    },
+    {
+      "name": "Yonhap News Chinese Culture & Sports",
+      "url": "https://cn.yna.co.kr/RSS/culture-sports.xml",
+      "fallback_domain": "cn.yna.co.kr"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+name: aespa daily news digest
+
+on:
+  schedule:
+    # 08:00 in Asia/Shanghai (Beijing time; UTC+08:00, no DST).
+    - cron: "0 8 * * *"
+      timezone: "Asia/Shanghai"
+  workflow_dispatch:
+
+concurrency:
+  group: aespa-daily-digest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src
+      SUMMARY_API_KEY: ${{ secrets.SUMMARY_API_KEY }}
+      SUMMARY_BASE_URL: ${{ vars.SUMMARY_BASE_URL || 'https://a-ocnfniawgw.cn-shanghai.fcapp.run/v1' }}
+      SUMMARY_MODEL: ${{ vars.SUMMARY_MODEL || 'gpt-5-codex' }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      SMTP_SECURITY: ${{ vars.SMTP_SECURITY || 'starttls' }}
+      LOOKBACK_HOURS: ${{ vars.LOOKBACK_HOURS || '36' }}
+      MAX_ARTICLES: ${{ vars.MAX_ARTICLES || '20' }}
+      REQUEST_TIMEOUT_SECONDS: ${{ vars.REQUEST_TIMEOUT_SECONDS || '15' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Send digest
+        run: python -m aespa_digest
+
+      - name: Upload post-delivery state
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-state
+          path: data/state.json
+          if-no-files-found: error
+          retention-days: 3
+
+  persist-state:
+    needs: digest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download post-delivery state
+        uses: actions/download-artifact@v5
+        with:
+          name: digest-state
+          path: data
+
+      - name: Commit state if it changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "aespa digest bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/state.json
+          if git diff --cached --quiet; then
+            echo "State did not change."
+          else
+            git commit -m "chore: update digest delivery state"
+            git push
+          fi
