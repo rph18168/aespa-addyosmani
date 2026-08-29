@@ -39,6 +39,8 @@ def send_email(
         raise MailError("SMTP password must not be empty")
     if timeout_seconds <= 0:
         raise MailError("SMTP timeout must be positive")
+    if not isinstance(security, str):
+        raise MailError("SMTP security must be a string")
     security = security.lower()
     if security not in {"starttls", "ssl", "none"}:
         raise MailError("SMTP security must be starttls, ssl or none")

@@ -16,10 +16,14 @@ from .models import Article, FeedConfig
 
 MAX_FEED_BYTES = 1_000_000
 MAX_FIELD_LENGTH = 20_000
+MAX_FETCH_ATTEMPTS = 2
 
 
 class FeedError(RuntimeError):
     """Raised when a feed cannot be downloaded or parsed safely."""
+
+class FeedRequestError(FeedError):
+    """Raised for a transient feed request failure that may be retried."""
 
 
 class _TextExtractor(HTMLParser):
@@ -187,7 +191,7 @@ def _fetch_bytes(url: str, timeout_seconds: float) -> bytes:
         with urlopen(request, timeout=timeout_seconds) as response:
             payload = response.read(MAX_FEED_BYTES + 1)
     except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        raise FeedError("feed request failed") from exc
+        raise FeedRequestError("feed request failed") from exc
     if len(payload) > MAX_FEED_BYTES:
         raise FeedError("feed payload exceeds the size limit")
     return payload
@@ -208,10 +212,18 @@ def fetch_feed(
     if timeout_seconds <= 0:
         raise FeedError("feed timeout must be positive")
     fetcher = fetch_bytes or _fetch_bytes
-    try:
-        payload = fetcher(feed.url, timeout_seconds)
-    except FeedError:
-        raise
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        raise FeedError("feed request failed") from exc
-    return parse_feed(payload, feed)
+    for attempt in range(MAX_FETCH_ATTEMPTS):
+        try:
+            payload = fetcher(feed.url, timeout_seconds)
+        except FeedRequestError:
+            if attempt + 1 == MAX_FETCH_ATTEMPTS:
+                raise
+            continue
+        except FeedError:
+            raise
+        except (HTTPError, URLError, TimeoutError, OSError) as exc:
+            if attempt + 1 == MAX_FETCH_ATTEMPTS:
+                raise FeedRequestError("feed request failed") from exc
+            continue
+        return parse_feed(payload, feed)
+    raise FeedRequestError("feed request failed")

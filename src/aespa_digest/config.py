@@ -152,11 +152,20 @@ def _normalize_domain(value: str, field_name: str) -> str:
 
 
 def _require_https_url(value: str, field_name: str) -> None:
-    parsed = urlsplit(value)
-    if parsed.scheme.lower() != "https" or not parsed.netloc:
+    try:
+        parsed = urlsplit(value)
+        hostname = parsed.hostname
+        _ = parsed.port
+    except ValueError as error:
+        raise ConfigurationError(f"{field_name} must be a valid HTTPS URL") from error
+    if parsed.scheme.lower() != "https" or not hostname:
         raise ConfigurationError(f"{field_name} must be an HTTPS URL")
     if parsed.username or parsed.password:
         raise ConfigurationError(f"{field_name} must not contain credentials")
+    if field_name == "SUMMARY_BASE_URL" and (parsed.query or parsed.fragment):
+        raise ConfigurationError(f"{field_name} must not contain a query or fragment")
+    if any(character.isspace() for character in value):
+        raise ConfigurationError(f"{field_name} must not contain whitespace")
 
 
 def _parse_int(value: str, field_name: str, minimum: int, maximum: int) -> int:

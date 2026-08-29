@@ -32,9 +32,9 @@ def summarize_article(
 ) -> str:
     """Summarize one article through an OpenAI-compatible chat endpoint."""
     endpoint = _completion_endpoint(base_url)
-    if not model.strip():
+    if not isinstance(model, str) or not model.strip():
         raise SummaryError("summary model must not be empty")
-    if not api_key.strip():
+    if not isinstance(api_key, str) or not api_key.strip():
         raise SummaryError("summary API key must not be empty")
     if timeout_seconds <= 0:
         raise SummaryError("summary timeout must be positive")
@@ -93,6 +93,8 @@ def _completion_endpoint(base_url: str) -> str:
             raise SummaryError("summary endpoint must use HTTPS")
         if parsed.username or parsed.password:
             raise SummaryError("summary endpoint must not contain credentials")
+        if parsed.query or parsed.fragment:
+            raise SummaryError("summary endpoint must not contain a query or fragment")
         _ = parsed.port
     except ValueError as exc:
         raise SummaryError("summary endpoint is invalid") from exc

@@ -70,12 +70,19 @@ def _is_trusted(article: Article, trusted_domains: tuple[str, ...]) -> bool:
     trusted = {_domain(domain) for domain in trusted_domains}
     trusted.discard(None)
     source_domain = _domain(article.source_domain)
-    candidates = {source_domain} if source_domain else {_domain(article.link)}
-    candidates.discard(None)
-    return any(
-        candidate == domain or candidate.endswith(f".{domain}")
-        for candidate in candidates
-        for domain in trusted
+    link_domain = _domain(article.link)
+    if not _matches_trusted_domain(link_domain, trusted):
+        return False
+    return source_domain is None or _matches_trusted_domain(source_domain, trusted)
+
+
+def _matches_trusted_domain(candidate: str | None, trusted: set[str]) -> bool:
+    return bool(
+        candidate
+        and any(
+            candidate == domain or candidate.endswith(f".{domain}")
+            for domain in trusted
+        )
     )
 
 

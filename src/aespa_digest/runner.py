@@ -10,7 +10,7 @@ from typing import Callable
 
 from .digest import DigestContent, DigestItem, build_digest
 from .logging_utils import configure_logging, log_event
-from .mailer import MailError, send_email
+from .mailer import send_email
 from .models import AppConfig, Article, FeedConfig
 from .qualification import qualify_articles
 from .sources import FeedError, fetch_feed
