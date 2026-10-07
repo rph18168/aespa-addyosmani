@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 
 from aespa_digest.config import load_config
+from aespa_digest.state import load_state
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,10 +28,16 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertIn("soompi.com", config.sources.trusted_domains)
         self.assertIn("에스파", config.sources.keywords)
 
-    def test_initial_state_has_expected_schema(self):
-        payload = json.loads((ROOT / "data/state.json").read_text(encoding="utf-8"))
+    def test_repository_state_has_expected_schema(self):
+        state_path = ROOT / "data/state.json"
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(payload, {"version": 1, "sent": {}})
+        self.assertEqual(set(payload), {"version", "sent"})
+        self.assertEqual(payload["version"], 1)
+        # Successful deliveries legitimately populate this tracked file.
+        # The runtime loader validates fingerprints, metadata and timestamps.
+        state = load_state(state_path)
+        self.assertEqual(set(state.sent), set(payload["sent"]))
 
 
 class WorkflowTests(unittest.TestCase):
