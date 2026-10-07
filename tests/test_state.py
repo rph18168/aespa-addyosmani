@@ -37,6 +37,16 @@ class StateTests(unittest.TestCase):
         self.assertEqual(state.sent, {})
         self.assertFalse(has_been_sent(state, self.article))
 
+    def test_existing_empty_state_starts_empty(self):
+        self.path.write_text(
+            json.dumps({"version": 1, "sent": {}}), encoding="utf-8"
+        )
+
+        state = load_state(self.path)
+
+        self.assertEqual(state.sent, {})
+        self.assertFalse(has_been_sent(state, self.article))
+
     def test_fingerprint_is_stable_across_tracking_parameters(self):
         without_tracking = Article(
             title=self.article.title,
